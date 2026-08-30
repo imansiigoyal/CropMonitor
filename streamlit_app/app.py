@@ -365,32 +365,36 @@ def _run_analysis(image_bytes: bytes, filename: str) -> dict:
     client = genai.Client(api_key=api_key)
 
     last_err: Exception | None = None
-    for model_name in GEMINI_MODELS:
-        try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=[
-                    ANALYSIS_PROMPT,
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                ],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    http_options=types.HttpOptions(timeout=15000),  # 15s max per model
-                ),
-            )
-            raw      = response.text.strip().replace("```json", "").replace("```", "").strip()
-            analysis = json.loads(raw)
-            db.insert_analysis(filename, analysis.get("overall_health", "Unknown"), json.dumps(analysis))
-            return analysis
-        except Exception as e:
-            last_err = e
-            err_str = str(e)
-            if "404" in err_str or "NOT_FOUND" in err_str:
-                continue          # model unavailable — skip instantly, no wait
-            time.sleep(0.5)       # brief pause only for overload/network errors
-            continue
+    for attempt in range(3):          # up to 3 full passes over all models
+        for model_name in GEMINI_MODELS:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[
+                        ANALYSIS_PROMPT,
+                        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    ],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        http_options=types.HttpOptions(timeout=15000),
+                    ),
+                )
+                raw      = response.text.strip().replace("```json", "").replace("```", "").strip()
+                analysis = json.loads(raw)
+                db.insert_analysis(filename, analysis.get("overall_health", "Unknown"), json.dumps(analysis))
+                return analysis
+            except Exception as e:
+                last_err = e
+                err_str = str(e)
+                if "404" in err_str or "NOT_FOUND" in err_str:
+                    continue          # model unavailable — skip instantly
+                time.sleep(0.3)
+                continue
+        # All models failed this pass — wait before retrying
+        if attempt < 2:
+            time.sleep(4)
 
-    raise ValueError(f"Analysis failed. Last error: {last_err}")
+    raise ValueError(f"Gemini is overloaded right now. Please try again in a moment. ({last_err})")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
