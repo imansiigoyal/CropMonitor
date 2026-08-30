@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CropMonitor AI — Smart Farming Dashboard</title>
+  <meta name="description" content="AI-powered crop disease detection and automated smart irrigation dashboard."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="logo-icon">🌿</span>
+    <div>
+      <div class="logo-title">CropMonitor <span>AI</span></div>
+      <div class="logo-sub">Smart Farming System</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="ws-pill" id="ws-pill">
+      <span class="ws-dot" id="ws-dot"></span>
+      <span id="ws-label">Connecting…</span>
+    </div>
+    <div class="updated-badge" id="updated-badge">No data</div>
+  </div>
+</header>
+
+<!-- ═══════════════════ ALERT ═══════════════════ -->
+<div class="alert-bar hidden" id="alert-bar">
+  <span id="alert-text">⚠️ Alert</span>
+  <button id="alert-close" class="alert-x">✕</button>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main class="page">
+
+  <!-- ─── SECTION 1: SENSOR CARDS ─── -->
+  <section class="section">
+    <h2 class="sec-heading">📡 Live Sensor Data</h2>
+    <div class="sensor-grid">
+
+      <div class="s-card" id="sc-moisture">
+        <div class="sc-top">
+          <div class="sc-icon moisture-ico">💧</div>
+          <div class="sc-name">Soil Moisture</div>
+        </div>
+        <div class="sc-val-row">
+          <span class="sc-val" id="v-moisture">--</span>
+          <span class="sc-unit">%</span>
+        </div>
+        <div class="sc-bar-track"><div class="sc-bar moisture-bar" id="b-moisture"></div></div>
+        <div class="sc-footer" id="moisture-status">Waiting for data…</div>
+      </div>
+
+      <div class="s-card" id="sc-temp">
+        <div class="sc-top">
+          <div class="sc-icon temp-ico">🌡️</div>
+          <div class="sc-name">Temperature</div>
+        </div>
+        <div class="sc-val-row">
+          <span class="sc-val" id="v-temp">--</span>
+          <span class="sc-unit">°C</span>
+        </div>
+        <div class="sc-bar-track"><div class="sc-bar temp-bar" id="b-temp"></div></div>
+        <div class="sc-footer" id="temp-status">Waiting for data…</div>
+      </div>
+
+      <div class="s-card" id="sc-humidity">
+        <div class="sc-top">
+          <div class="sc-icon hum-ico">🌫️</div>
+          <div class="sc-name">Humidity</div>
+        </div>
+        <div class="sc-val-row">
+          <span class="sc-val" id="v-humidity">--</span>
+          <span class="sc-unit">%</span>
+        </div>
+        <div class="sc-bar-track"><div class="sc-bar hum-bar" id="b-humidity"></div></div>
+        <div class="sc-footer" id="humidity-status">Waiting for data…</div>
+      </div>
+
+      <div class="s-card pump-card" id="sc-pump">
+        <div class="sc-top">
+          <div class="sc-icon pump-ico">🚿</div>
+          <div class="sc-name">Irrigation Pump</div>
+        </div>
+        <div class="pump-status-wrap">
+          <div class="pump-indicator" id="pump-indicator">
+            <div class="pump-ring" id="pump-ring"></div>
+            <span id="pump-text">OFF</span>
+          </div>
+        </div>
+        <div class="sc-footer" id="pump-mode-label">Mode: Auto</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: IRRIGATION CONTROL ─── -->
+  <section class="section">
+    <h2 class="sec-heading">🚿 Irrigation Control</h2>
+    <div class="irrig-box">
+      <div class="irrig-left">
+        <div class="irrig-info">
+          <div class="irrig-thresh">
+            <span class="thresh-pill thresh-on">ON &lt; <strong id="on-thresh">30</strong>%</span>
+            <span class="thresh-pill thresh-off">OFF &gt; <strong id="off-thresh">60</strong>%</span>
+          </div>
+          <p class="irrig-desc">In <strong>Auto</strong> mode, the pump activates automatically based on soil moisture thresholds. Switch to <strong>Manual</strong> to control it yourself.</p>
+        </div>
+      </div>
+      <div class="irrig-right">
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="btn-auto" onclick="setMode('auto')">⚡ Auto</button>
+          <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">🖐 Manual</button>
+        </div>
+        <div class="manual-btns hidden" id="manual-btns">
+          <button class="pump-action pump-on-btn" id="btn-pump-on" onclick="sendOverride('manual', true)">💦 Turn Pump ON</button>
+          <button class="pump-action pump-off-btn" id="btn-pump-off" onclick="sendOverride('manual', false)">⛔ Turn Pump OFF</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: CHART ─── -->
+  <section class="section">
+    <div class="chart-header">
+      <h2 class="sec-heading" style="margin-bottom:0">📊 24-Hour Sensor Trends</h2>
+      <div class="chart-tabs" id="chart-tabs">
+        <button class="ctab active" data-key="moisture">Moisture</button>
+        <button class="ctab" data-key="temperature">Temperature</button>
+        <button class="ctab" data-key="humidity">Humidity</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="main-chart"></canvas>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 4: AI CROP ANALYSIS ─── -->
+  <section class="section">
+    <h2 class="sec-heading">🤖 AI Crop Disease Detection</h2>
+    <p class="sec-desc">Upload a photo of your crop — the AI will analyse it for diseases, pest infestations, and nutrient deficiencies.</p>
+
+    <!-- STEP 1: Upload -->
+    <div id="ai-step-upload">
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="file-input" accept="image/*" style="display:none"/>
+        <div class="upload-inner" id="upload-inner">
+          <div class="upload-icon">📷</div>
+          <div class="upload-title">Click here to upload a crop photo</div>
+          <div class="upload-sub">or drag and drop — JPEG, PNG, WebP (max 10 MB)</div>
+        </div>
+      </div>
+
+      <!-- Preview + Analyse -->
+      <div class="preview-box hidden" id="preview-box">
+        <img id="preview-img" src="" alt="Selected crop" class="preview-img"/>
+        <div class="preview-meta">
+          <div class="preview-filename" id="preview-filename">filename.jpg</div>
+          <div class="preview-actions">
+            <button class="btn-analyse" id="btn-analyse">🔬 Analyse with Gemini AI</button>
+            <button class="btn-clear" id="btn-clear">✕ Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Loading -->
+    <div class="ai-loading hidden" id="ai-loading">
+      <div class="loading-ring"></div>
+      <div class="loading-text">Analysing with Gemini Vision AI…</div>
+      <div class="loading-sub">This usually takes 3–8 seconds</div>
+    </div>
+
+    <!-- STEP 3: Results -->
+    <div class="ai-results hidden" id="ai-results">
+
+      <!-- Health Overview -->
+      <div class="health-overview" id="health-overview">
+        <div class="health-score-block">
+          <div class="health-ring-wrap">
+            <svg viewBox="0 0 120 120" class="health-svg">
+              <circle cx="60" cy="60" r="50" class="hring-bg"/>
+              <circle cx="60" cy="60" r="50" class="hring-fg" id="hring-fg"
+                      stroke-dasharray="0 314.16"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-num" id="ring-num">0</div>
+              <div class="ring-lbl">/ 100</div>
+            </div>
+          </div>
+          <div class="health-text-block">
+            <div class="health-label">Overall Health</div>
+            <div class="health-value" id="health-value">--</div>
+            <div class="urgency-pill" id="urgency-pill">--</div>
+          </div>
+        </div>
+        <div class="analysed-image-wrap">
+          <img id="analysed-img" src="" alt="Analysed crop" class="analysed-img"/>
+        </div>
+      </div>
+
+      <!-- Result Tabs -->
+      <div class="result-tabs" id="result-tabs">
+        <button class="rtab active" data-target="tab-diseases">🦠 Diseases</button>
+        <button class="rtab" data-target="tab-pests">🐛 Pests</button>
+        <button class="rtab" data-target="tab-nutrients">🧪 Nutrients</button>
+        <button class="rtab" data-target="tab-recs">✅ Actions</button>
+      </div>
+
+      <div class="result-panels">
+        <div class="result-panel active" id="tab-diseases">
+          <div id="disease-content"></div>
+        </div>
+        <div class="result-panel" id="tab-pests">
+          <div id="pest-content"></div>
+        </div>
+        <div class="result-panel" id="tab-nutrients">
+          <div id="nutrient-content"></div>
+        </div>
+        <div class="result-panel" id="tab-recs">
+          <div id="recs-content"></div>
+        </div>
+      </div>
+
+      <button class="btn-reanalyse" id="btn-reanalyse">📷 Analyse Another Photo</button>
+    </div>
+
+    <!-- Error state -->
+    <div class="ai-error hidden" id="ai-error">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title" id="error-title">Analysis Failed</div>
+      <div class="error-msg" id="error-msg">Something went wrong. Please try again.</div>
+      <button class="btn-retry" id="btn-retry">Try Again</button>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+  // ── Dynamic URL config (works on localhost AND Render HTTPS) ──────────
+  const API     = '/api';
+  const WS_URL  = (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/ws';
+  const MAX_PTS = 200;
+</script>
+<script src="app.js"></script>
+</body>
+</html>

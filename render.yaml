@@ -1,0 +1,38 @@
+# render.yaml — Render.com Infrastructure Blueprint
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This file lets Render auto-configure the CropMonitor service.
+# After connecting your GitHub repo, Render reads this file and
+# sets up everything automatically.
+
+services:
+  - type: web
+    name: cropmonitor-ai
+    runtime: node
+    region: singapore        # closest free-tier region to India
+    plan: free               # upgrade to 'starter' ($7/mo) for no sleep + persistent disk
+
+    # ── Source ────────────────────────────────────────────────────
+    rootDir: backend         # package.json lives in /backend
+
+    # ── Build & Start ─────────────────────────────────────────────
+    buildCommand: npm install
+    startCommand: npm start
+
+    # ── Health Check ──────────────────────────────────────────────
+    healthCheckPath: /api/ping
+
+    # ── Environment Variables ─────────────────────────────────────
+    # IMPORTANT: Set GEMINI_API_KEY in the Render dashboard (Environment tab).
+    # Do NOT put your real key here — this file is committed to GitHub.
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MOISTURE_ON_THRESHOLD
+        value: 30
+      - key: MOISTURE_OFF_THRESHOLD
+        value: 60
+      - key: GEMINI_API_KEY
+        sync: false          # tells Render: "I'll set this manually in the dashboard"
