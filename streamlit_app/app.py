@@ -250,9 +250,9 @@ div.stMarkdown p { color: #374151 !important; }
 def _fmt(ts: str) -> str:
     if not ts: return "--"
     try:
-        return datetime.fromisoformat(ts).strftime("%H:%M:%S")
+        return datetime.fromisoformat(ts).strftime("%H:%M")
     except Exception:
-        return ts[:8] if len(ts) >= 8 else "--"
+        return ts[:5] if len(ts) >= 5 else "--"
 
 def _moisture_desc(v: float) -> str:
     if v < 20:  return "🏜️ Critically dry"
@@ -481,7 +481,8 @@ def _sensor_section():
         </div>""", unsafe_allow_html=True)
 
     if ts:
-        st.caption(f"🕐 Updated: {_fmt(ts)}  ·  Pump ON below {MOISTURE_ON}%  ·  OFF above {MOISTURE_OFF}%")
+        live_time = datetime.now().strftime("%H:%M")
+        st.caption(f"🕐 Live: {live_time}  ·  Pump ON below {MOISTURE_ON}%  ·  OFF above {MOISTURE_OFF}%")
 
 _sensor_section()
 
