@@ -481,8 +481,25 @@ def _sensor_section():
         </div>""", unsafe_allow_html=True)
 
     if ts:
-        live_time = datetime.now().strftime("%H:%M")
-        st.caption(f"🕐 Live: {live_time}  ·  Pump ON below {MOISTURE_ON}%  ·  OFF above {MOISTURE_OFF}%")
+        import streamlit.components.v1 as components
+        components.html(f"""
+        <script>
+          function tick() {{
+            var now = new Date();
+            var h = String(now.getHours()).padStart(2,'0');
+            var m = String(now.getMinutes()).padStart(2,'0');
+            var el = document.getElementById('liveclock');
+            if (el) el.textContent = h + ':' + m;
+          }}
+          tick();
+          setInterval(tick, 15000);
+        </script>
+        <div style="font-size:0.75rem;color:#6b7280;margin-top:-6px;padding:0 2px;font-family:Inter,sans-serif;">
+          🕐 Live: <strong id="liveclock" style="color:#16a34a;">--:--</strong>
+          &nbsp;·&nbsp; Pump ON below <strong>{MOISTURE_ON}%</strong>
+          &nbsp;·&nbsp; OFF above <strong>{MOISTURE_OFF}%</strong>
+        </div>
+        """, height=28, scrolling=False)
 
 _sensor_section()
 
