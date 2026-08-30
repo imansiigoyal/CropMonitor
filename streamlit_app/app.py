@@ -327,10 +327,10 @@ def _render_items(items: list, kind: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 GEMINI_MODELS = [
     "gemini-3.6-flash",
+    "gemini-3.1-pro-preview",
     "gemini-flash-latest",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
-    "gemini-2.5-pro",
 ]
 
 ANALYSIS_PROMPT = """You are an expert plant pathologist and agronomist. Analyse this crop image thoroughly.
