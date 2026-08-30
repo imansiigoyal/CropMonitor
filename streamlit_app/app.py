@@ -365,7 +365,7 @@ def _run_analysis(image_bytes: bytes, filename: str) -> dict:
     client = genai.Client(api_key=api_key)
 
     last_err: Exception | None = None
-    for i, model_name in enumerate(GEMINI_MODELS):
+    for model_name in GEMINI_MODELS:
         try:
             response = client.models.generate_content(
                 model=model_name,
@@ -375,7 +375,7 @@ def _run_analysis(image_bytes: bytes, filename: str) -> dict:
                 ],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    http_options=types.HttpOptions(timeout=40000),
+                    http_options=types.HttpOptions(timeout=15000),  # 15s max per model
                 ),
             )
             raw      = response.text.strip().replace("```json", "").replace("```", "").strip()
@@ -384,11 +384,13 @@ def _run_analysis(image_bytes: bytes, filename: str) -> dict:
             return analysis
         except Exception as e:
             last_err = e
-            wait = min(2 ** i, 8)   # exponential backoff: 1s, 2s, 4s, 8s …
-            time.sleep(wait)
+            err_str = str(e)
+            if "404" in err_str or "NOT_FOUND" in err_str:
+                continue          # model unavailable — skip instantly, no wait
+            time.sleep(0.5)       # brief pause only for overload/network errors
             continue
 
-    raise ValueError(f"All models failed (overloaded or unavailable). Last error: {last_err}")
+    raise ValueError(f"Analysis failed. Last error: {last_err}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
