@@ -72,6 +72,7 @@ wss.on('connection', (ws, req) => {
 
 // ── Wire up shared state between routes ─────────────────────────────────
 sensorRouter.setBroadcast(broadcast);
+analyzeRouter.setBroadcast(broadcast);
 irrigationRouter.setIrrigationState(sensorRouter.irrigationState);
 irrigationRouter.setBroadcast(broadcast);
 

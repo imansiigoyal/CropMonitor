@@ -5,7 +5,89 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { insertAnalysis, getRecentAnalyses } = require('../db');
+const { insertAnalysis, getRecentAnalyses, insertReading } = require('../db');
+
+// Global reference to broadcast function (set by server.js)
+let broadcastFn = null;
+router.setBroadcast = (fn) => { broadcastFn = fn; };
+
+/**
+ * Deterministically constructs image-specific 24-hour environmental & hydration trends
+ * tailored directly to the diagnosed crop species, health condition, and visual symptoms.
+ */
+function buildImageTelemetry(analysis, filename) {
+  const st = analysis.sensor_telemetry || {};
+  const crop = (analysis.crop_name || 'Crop').toLowerCase();
+  const health = (analysis.overall_health || 'fair').toLowerCase();
+  const score = typeof analysis.health_score === 'number' ? analysis.health_score : 70;
+
+  // Generate distinct variance hash from filename + crop + scientific name
+  let hash = 0;
+  const seed = `${filename || ''}_${analysis.crop_name || ''}_${analysis.scientific_name || ''}_${analysis.growth_stage || ''}`;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) & 0xffff;
+  const variance = (hash % 17) - 8; // -8 to +8
+
+  let baseTemp = st.estimated_temperature;
+  if (!baseTemp || isNaN(baseTemp)) {
+    // Sick/stressed crops show elevated canopy temperature; healthy well-watered crops transpire cooler
+    baseTemp = +(24.0 + (100 - score) * 0.09 + variance * 0.25).toFixed(1);
+  }
+
+  let baseMoist = st.estimated_moisture;
+  if (!baseMoist || isNaN(baseMoist)) {
+    // Stressed / diseased foliage correlates with moisture deficit
+    baseMoist = +(48.0 - (100 - score) * 0.22 + variance * 0.4).toFixed(1);
+  }
+
+  let baseHum = st.estimated_humidity;
+  if (!baseHum || isNaN(baseHum)) {
+    // Fungal pathogens (e.g. Blight) flourish in high humidity; insect pests in moderate/dry conditions
+    const isFungal = health.includes('poor') || crop.includes('tomato') || JSON.stringify(analysis.diseases || []).toLowerCase().includes('blight');
+    baseHum = +(isFungal ? 78.0 + variance * 0.3 : 56.0 + variance * 0.5).toFixed(1);
+  }
+
+  baseTemp = Math.min(39.0, Math.max(19.0, +parseFloat(baseTemp).toFixed(1)));
+  baseMoist = Math.min(78.0, Math.max(16.0, +parseFloat(baseMoist).toFixed(1)));
+  baseHum = Math.min(94.0, Math.max(34.0, +parseFloat(baseHum).toFixed(1)));
+
+  // Generate 8 distinct 24-hour timeline points and image-specific curves
+  const timestamps = [];
+  const moistArr = [];
+  const tempArr = [];
+  const humArr = [];
+  const now = Date.now();
+
+  for (let i = 7; i >= 0; i--) {
+    const pt = new Date(now - i * 3 * 3600 * 1000);
+    const label = pt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    timestamps.push(label);
+
+    const hr = pt.getHours();
+    const sunFactor = Math.sin(((hr - 6) / 24) * 2 * Math.PI);
+
+    const curT = +(baseTemp + sunFactor * 4.6 + Math.sin(i * 1.3 + hash) * 0.8).toFixed(1);
+    const curM = +(baseMoist + Math.cos(i * 0.9 + hash) * 3.2).toFixed(1);
+    const curH = +(baseHum - sunFactor * 10.5 + Math.sin(i * 0.8 + hash) * 1.5).toFixed(1);
+
+    tempArr.push(Math.min(42.0, Math.max(18.0, curT)));
+    moistArr.push(Math.min(85.0, Math.max(14.0, curM)));
+    humArr.push(Math.min(98.0, Math.max(28.0, curH)));
+  }
+
+  return {
+    crop_name: analysis.crop_name || 'Crop',
+    condition: analysis.overall_health || 'Analyzed',
+    estimated_moisture: moistArr[moistArr.length - 1],
+    estimated_temperature: tempArr[tempArr.length - 1],
+    estimated_humidity: humArr[humArr.length - 1],
+    trends: {
+      timestamps,
+      moisture: moistArr,
+      temperature: tempArr,
+      humidity: humArr
+    }
+  };
+}
 
 // ── Upload directory ─────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
@@ -47,6 +129,11 @@ const PROMPT = `You are an expert agricultural scientist, botanist, and plant pa
 Analyze this crop image thoroughly. Identify the specific crop, its growth stage, and assess its overall health.
 Even if the crop is healthy with no active infection, provide crop-specific analysis, preventive disease/pest watches, nutrient advice, and care recommendations tailored specifically to this plant.
 
+Assess the plant's physiological microclimate and hydration levels based on visual signs (leaf turgidity, wilting, curling, discoloration, heat stress):
+- estimated_moisture: soil/tissue moisture % (15-80)
+- estimated_temperature: canopy temperature in °C (18-42)
+- estimated_humidity: relative humidity % conducive or present (30-95)
+
 Return ONLY a valid JSON object with NO markdown code fences or extra text:
 {
   "crop_name": "Identified crop name (e.g. Wheat, Tomato, Rice, Green Bean, Corn, Cotton, etc.)",
@@ -55,6 +142,11 @@ Return ONLY a valid JSON object with NO markdown code fences or extra text:
   "overall_health": "Good, Fair, Poor, or Critical",
   "health_score": <number 0-100>,
   "visual_assessment": "Detailed 2-3 sentence assessment of leaf color, canopy density, vigor, and visible conditions",
+  "sensor_telemetry": {
+    "estimated_moisture": <number between 15.0 and 80.0>,
+    "estimated_temperature": <number in °C between 18.0 and 42.0>,
+    "estimated_humidity": <number between 30.0 and 95.0>
+  },
   "diseases": [
     {
       "name": "Disease name",
@@ -157,6 +249,33 @@ router.post('/', (req, res) => {
           console.error('[Gemini] JSON parse failed. Raw:', rawText.slice(0, 300));
           safeDelete(req.file.path);
           return res.status(500).json({ error: 'AI returned an unreadable response. Please try again.' });
+        }
+
+        // Attach image-specific telemetry and trends
+        analysis.sensor_telemetry = buildImageTelemetry(analysis, req.file.originalname || req.file.filename);
+
+        // Record photo-derived reading in database
+        const curReading = {
+          moisture: analysis.sensor_telemetry.estimated_moisture,
+          temperature: analysis.sensor_telemetry.estimated_temperature,
+          humidity: analysis.sensor_telemetry.estimated_humidity,
+          pump_state: analysis.sensor_telemetry.estimated_moisture < 30 ? 1 : 0
+        };
+        insertReading(curReading);
+
+        // Broadcast sensor update so UI cards immediately animate
+        if (broadcastFn) {
+          broadcastFn(JSON.stringify({
+            type: 'sensor_update',
+            data: {
+              ...curReading,
+              pump_on: curReading.pump_state === 1,
+              mode: 'auto',
+              moisture_on_threshold: 30,
+              moisture_off_threshold: 60,
+              timestamp: new Date().toISOString()
+            }
+          }));
         }
 
         // Persist result

@@ -9,7 +9,22 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css?v=2026white"/>
+  <style>
+    html, body {
+      background-color: #ffffff !important;
+      background: #ffffff !important;
+      color: #0f172a !important;
+    }
+    .page, .section, .s-card, .irrig-box, .chart-wrap, .upload-area, .preview-box, .ai-results, .result-item, .crop-visual-box {
+      background-color: #ffffff !important;
+      background: #ffffff !important;
+    }
+    .topbar {
+      background: rgba(255, 255, 255, 0.95) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+  </style>
 </head>
 <body>
 
@@ -23,6 +38,14 @@
     </div>
   </div>
   <div class="topbar-right">
+    <a href="http://localhost:8501" target="_blank" class="topbar-nav-link" id="nav-streamlit-btn" title="Open Streamlit AI App" style="display:inline-flex; align-items:center; gap:6px; padding:0.35rem 0.8rem; border-radius:999px; background:#f0fdf4; border:1px solid #86efac; color:#16a34a; font-weight:700; font-size:0.8rem; text-decoration:none; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <span>🚀</span>
+      <span>Streamlit AI</span>
+    </a>
+    <a href="https://github.com/imansiigoyal/CropMonitor" target="_blank" class="topbar-nav-link" id="nav-github-btn" title="Open GitHub Repository" style="display:inline-flex; align-items:center; gap:6px; padding:0.35rem 0.8rem; border-radius:999px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; font-weight:600; font-size:0.8rem; text-decoration:none;">
+      <span>🐙</span>
+      <span>GitHub</span>
+    </a>
     <button class="topbar-chat-btn" id="topbar-chat-btn" title="Open AgriBot AI Farming Assistant">
       <span class="chat-bot-icon">🤖</span>
       <span class="chat-bot-label">AgriBot AI</span>
@@ -260,7 +283,10 @@
         </div>
       </div>
 
-      <button class="btn-reanalyse" id="btn-reanalyse">📷 Analyse Another Photo</button>
+      <div style="display:flex;gap:.75rem;margin-top:1.25rem;">
+        <button class="btn-reanalyse" id="btn-reanalyse" style="margin-top:0;flex:1;">🔄 Analyze Again</button>
+        <button class="btn-reanalyse" id="btn-new-photo" style="margin-top:0;flex:1;background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#e8fdf0;">📷 Upload New Photo</button>
+      </div>
     </div>
 
     <!-- Error state -->

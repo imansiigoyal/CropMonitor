@@ -10,35 +10,27 @@ You can deploy **CropMonitor AI** for free to **[Streamlit Community Cloud](http
 
 ---
 
-## Step 1: Push Your Code to GitHub
+## ⚡ Instant 1-Click Streamlit Cloud Deploy Link
 
-Open PowerShell in `CropMonitor`:
-
-```powershell
-cd C:\Users\hp\Desktop\CropMonitor
-
-# Initialize git if not already done
-git init
-git add .
-git commit -m "Add CropMonitor AI Streamlit app with AgriBot and Vision"
-
-# Create a new public/private repository on GitHub, then link it:
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/CropMonitor.git
-git branch -M main
-git push -u origin main
-```
+Click this link directly to deploy this repository on Streamlit Cloud in seconds:
+👉 **[Click Here to 1-Click Deploy on Streamlit Cloud](https://share.streamlit.io/deploy?repository=imansiigoyal/CropMonitor&branch=main&mainModule=streamlit_app.py)**
 
 ---
 
-## Step 2: Deploy on Streamlit Cloud
+## 📋 Direct App Details
+- **GitHub Repository**: [https://github.com/imansiigoyal/CropMonitor](https://github.com/imansiigoyal/CropMonitor)
+- **Branch**: `main`
+- **Main file path**: `streamlit_app.py`
+- **One-Click Deploy URL**: `https://share.streamlit.io/deploy?repository=imansiigoyal/CropMonitor&branch=main&mainModule=streamlit_app.py`
 
-1. Go to **[share.streamlit.io](https://share.streamlit.io)** and log in with your GitHub account.
-2. Click **New app**.
-3. Select your repository:
-   - **Repository**: `YOUR_GITHUB_USERNAME/CropMonitor`
+---
+
+## Step 1: Deploy on Streamlit Cloud
+1. Click the 1-click deploy link above (or visit **[share.streamlit.io](https://share.streamlit.io)**).
+2. Confirm the repository settings:
+   - **Repository**: `imansiigoyal/CropMonitor`
    - **Branch**: `main`
    - **Main file path**: `streamlit_app.py`
-4. Click **Advanced settings** (or the **Secrets** section).
 
 ---
 

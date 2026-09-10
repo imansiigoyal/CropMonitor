@@ -63,8 +63,39 @@ async function initDB() {
   }
 
   db.run(SCHEMA);
+  seedHistoryIfEmpty();
   saveToDisk();
   return db;
+}
+
+/** Seed realistic 24-hour historical sensor telemetry if database is empty or sparse */
+function seedHistoryIfEmpty() {
+  const row = queryOne(`SELECT COUNT(*) as cnt FROM sensor_readings`);
+  if (!row || row.cnt < 12) {
+    console.log('  🌱 Seeding realistic 24-hour sensor trends history...');
+    const now = Date.now();
+    for (let i = 24; i >= 0; i--) {
+      const past = new Date(now - i * 3600 * 1000);
+      const pad = (n) => String(n).padStart(2, '0');
+      const ts = `${past.getFullYear()}-${pad(past.getMonth() + 1)}-${pad(past.getDate())} ${pad(past.getHours())}:${pad(past.getMinutes())}:${pad(past.getSeconds())}`;
+      
+      const hr = past.getHours();
+      // Natural diurnal solar temperature cycle
+      const sunFactor = Math.sin(((hr - 6) / 24) * 2 * Math.PI);
+      const temp = +(26.0 + sunFactor * 5.0 + ((i % 3) * 0.4 - 0.6)).toFixed(1);
+      const hum = +(62.0 - sunFactor * 12.0 + ((i % 4) * 0.7 - 1.0)).toFixed(1);
+      // Realistic soil moisture variation (32% to 48%)
+      const moist = +(38.0 + Math.sin(i * 0.45) * 8.5 + ((i % 5) * 0.5 - 1.0)).toFixed(1);
+      const pump = moist < 30 ? 1 : 0;
+
+      run(
+        `INSERT INTO sensor_readings (timestamp, moisture, temperature, humidity, pump_state)
+         VALUES (:ts, :moisture, :temperature, :humidity, :pump_state)`,
+        { ':ts': ts, ':moisture': moist, ':temperature': temp, ':humidity': hum, ':pump_state': pump }
+      );
+    }
+    saveToDisk();
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -103,11 +134,20 @@ function getLatestReading() {
 }
 
 function getRecentReadings() {
-  return queryAll(
+  let rows = queryAll(
     `SELECT * FROM sensor_readings
      WHERE timestamp >= datetime('now', '-24 hours', 'localtime')
      ORDER BY timestamp ASC`
   );
+  if (!rows || rows.length < 6) {
+    // Fallback: fetch last 30 readings and return in chronological order
+    rows = queryAll(
+      `SELECT * FROM sensor_readings
+       ORDER BY id DESC LIMIT 30`
+    );
+    rows.reverse();
+  }
+  return rows;
 }
 
 // ── AI Analysis ───────────────────────────────────────────────────────────

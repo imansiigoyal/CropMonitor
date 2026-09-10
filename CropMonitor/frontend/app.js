@@ -184,12 +184,16 @@ async function fetchHistory() {
   try {
     const r    = await fetch(`${API}/sensor/history`);
     const rows = await r.json();
-    if (!Array.isArray(rows)) return;
+    if (!Array.isArray(rows) || !rows.length) return;
+    history.labels.length = 0;
+    history.moisture.length = 0;
+    history.temperature.length = 0;
+    history.humidity.length = 0;
     rows.forEach(row => {
       history.labels.push(fmtTime(row.timestamp));
-      history.moisture.push(row.moisture);
-      history.temperature.push(row.temperature);
-      history.humidity.push(row.humidity);
+      history.moisture.push(+parseFloat(row.moisture).toFixed(1));
+      history.temperature.push(+parseFloat(row.temperature).toFixed(1));
+      history.humidity.push(+parseFloat(row.humidity).toFixed(1));
     });
     if (history.labels.length > MAX_PTS) {
       ['labels','moisture','temperature','humidity'].forEach(k => {
@@ -225,10 +229,10 @@ function renderChart() {
           borderColor:     cfg.color,
           backgroundColor: cfg.color + '20',
           borderWidth:     2.5,
-          pointRadius:     2,
-          pointHoverRadius:5,
+          pointRadius:     history.labels.length > 30 ? 1.5 : 3,
+          pointHoverRadius:6,
           fill:            true,
-          tension:         0.4,
+          tension:         0.35,
         }],
       },
       options: {
@@ -238,24 +242,24 @@ function renderChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(8,14,10,.95)',
-            borderColor:     'rgba(255,255,255,.08)',
+            backgroundColor: 'rgba(15,23,42,.92)',
+            borderColor:     'rgba(0,0,0,.1)',
             borderWidth:     1,
-            titleColor:      '#e8fdf0',
-            bodyColor:       '#86efac',
+            titleColor:      '#ffffff',
+            bodyColor:       '#4ade80',
             padding:         10,
           },
         },
         scales: {
           x: {
-            ticks: { color:'#2a4535', maxTicksLimit:8, maxRotation:0, font:{ family:'JetBrains Mono', size:10 } },
-            grid:  { color:'rgba(255,255,255,.03)' },
-            border:{ color:'rgba(255,255,255,.05)' },
+            ticks: { color:'#475569', maxTicksLimit:8, maxRotation:0, font:{ family:'JetBrains Mono', size:11 } },
+            grid:  { color:'rgba(0,0,0,.06)' },
+            border:{ color:'rgba(0,0,0,.1)' },
           },
           y: {
-            ticks: { color:'#2a4535', font:{ family:'JetBrains Mono', size:10 } },
-            grid:  { color:'rgba(255,255,255,.03)' },
-            border:{ color:'rgba(255,255,255,.05)' },
+            ticks: { color:'#475569', font:{ family:'JetBrains Mono', size:11 } },
+            grid:  { color:'rgba(0,0,0,.06)' },
+            border:{ color:'rgba(0,0,0,.1)' },
           },
         },
       },
@@ -341,6 +345,9 @@ function selectFile(f) {
     return;
   }
   selectedFile = f;
+  // Clear any existing analysis or error immediately
+  aiResults.classList.add('hidden');
+  aiError.classList.add('hidden');
   const reader = new FileReader();
   reader.onload = (e) => {
     previewImg.src = e.target.result;
@@ -455,6 +462,48 @@ function showResults(a) {
     ? `<ul class="recs-list">${recs.map(r => `<li>→ ${r}</li>`).join('')}</ul>`
     : '<div class="no-issue">✅ Follow routine crop monitoring.</div>';
 
+  // ── Update 24-Hour Trends Chart specifically for THIS UPLOADED PHOTO ──
+  if (a.sensor_telemetry && a.sensor_telemetry.trends) {
+    const t = a.sensor_telemetry.trends;
+    history.labels.length = 0;
+    history.moisture.length = 0;
+    history.temperature.length = 0;
+    history.humidity.length = 0;
+
+    t.timestamps.forEach((ts, idx) => {
+      history.labels.push(ts);
+      history.moisture.push(+parseFloat(t.moisture[idx]).toFixed(1));
+      history.temperature.push(+parseFloat(t.temperature[idx]).toFixed(1));
+      history.humidity.push(+parseFloat(t.humidity[idx]).toFixed(1));
+    });
+
+    // Update Section 3 Chart Heading so user clearly sees graph is tailored to this photo
+    const secHeading = document.querySelector('.chart-header .sec-heading');
+    if (secHeading) {
+      secHeading.innerHTML = `📊 24-Hour Trends — <span style="color:#86efac;font-weight:700;">${a.crop_name || 'Crop'}</span> <span style="font-size:0.75rem;color:#94a3b8;font-weight:normal;">(${a.overall_health || 'Condition'} Profile)</span>`;
+    }
+
+    // Force re-render chart with new photo curve
+    if (chart) {
+      chart.destroy();
+      chart = null;
+    }
+    renderChart();
+
+    // Also update Section 1 top cards to reflect this photo's estimated telemetry
+    if (a.sensor_telemetry.estimated_moisture != null) {
+      setCard('moisture', a.sensor_telemetry.estimated_moisture, 100, tempDesc(false, a.sensor_telemetry.estimated_moisture));
+    }
+    if (a.sensor_telemetry.estimated_temperature != null) {
+      setCard('temp', a.sensor_telemetry.estimated_temperature, 50, tempDesc(true, a.sensor_telemetry.estimated_temperature));
+    }
+    if (a.sensor_telemetry.estimated_humidity != null) {
+      setCard('humidity', a.sensor_telemetry.estimated_humidity, 100, humDesc(a.sensor_telemetry.estimated_humidity));
+    }
+
+    showAlert(`📈 Sensor trends graph updated specifically for ${a.crop_name || 'uploaded photo'}!`);
+  }
+
   // Switch to diseases tab
   switchResultTab('tab-diseases');
 }
@@ -536,14 +585,44 @@ function switchResultTab(id) {
   });
 }
 
-// Re-analyse button
-$('btn-reanalyse').addEventListener('click', () => {
+// Re-analyse button (Analyse current photo again)
+const btnReanalyse = $('btn-reanalyse');
+if (btnReanalyse) {
+  btnReanalyse.addEventListener('click', async () => {
+    if (!selectedFile) {
+      resetUploadFlow();
+      return;
+    }
+    aiResults.classList.add('hidden');
+    aiLoading.classList.remove('hidden');
+    try {
+      const form = new FormData();
+      form.append('image', selectedFile);
+      const res = await fetch(`${API}/analyze`, { method: 'POST', body: form });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Server error ${res.status}`);
+      aiLoading.classList.add('hidden');
+      showResults(json);
+    } catch (err) {
+      aiLoading.classList.add('hidden');
+      showError(err.message);
+    }
+  });
+}
+
+function resetUploadFlow() {
   selectedFile = null;
   fileInput.value = '';
   aiResults.classList.add('hidden');
+  aiError.classList.add('hidden');
   uploadArea.classList.remove('hidden');
   previewBox.classList.add('hidden');
-});
+}
+
+const btnNewPhoto = $('btn-new-photo');
+if (btnNewPhoto) {
+  btnNewPhoto.addEventListener('click', resetUploadFlow);
+}
 
 // ─────────────────────────────────────────────────────────────
 // Error display
