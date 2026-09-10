@@ -22,8 +22,11 @@ load_dotenv(Path(__file__).parent / "CropMonitor" / "backend" / ".env")
 
 def get_api_key():
     """Retrieve Gemini API key from Streamlit secrets, env, or session."""
-    if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
-        return st.secrets["GEMINI_API_KEY"].strip()
+    try:
+        if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
+            return str(st.secrets["GEMINI_API_KEY"]).strip()
+    except Exception:
+        pass
     env_key = os.getenv("GEMINI_API_KEY", "").strip()
     if env_key and env_key != "your_actual_key_here" and env_key != "your_gemini_api_key_here":
         return env_key
