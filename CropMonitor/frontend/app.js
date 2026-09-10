@@ -399,6 +399,9 @@ btnAnalyse.addEventListener('click', async () => {
 // ─────────────────────────────────────────────────────────────
 // Render AI Results
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Render AI Results
+// ─────────────────────────────────────────────────────────────
 function showResults(a) {
   aiResults.classList.remove('hidden');
 
@@ -417,66 +420,100 @@ function showResults(a) {
   const hv = $('health-value');
   hv.textContent = `${healthEmoji(a.overall_health)} ${a.overall_health ?? 'Unknown'}`;
   hv.className = `health-value health-${cls}`;
-  $('urgency-pill').textContent = `Urgency: ${a.urgency ?? 'Unknown'}`;
+  $('urgency-pill').textContent = `Urgency: ${a.urgency ?? 'Routine monitoring'}`;
+
+  // Crop Identity & Stage
+  const cropTitle = $('crop-name-title');
+  const cropSci   = $('crop-sci-name');
+  const cropStage = $('crop-stage-val');
+  const cropVisual = $('crop-visual-text');
+
+  if (cropTitle) cropTitle.textContent = a.crop_name || 'Detected Crop';
+  if (cropSci)   cropSci.textContent   = a.scientific_name ? `(${a.scientific_name})` : '';
+  if (cropStage) cropStage.textContent = a.growth_stage || 'Active Growth Stage';
+  if (cropVisual) cropVisual.textContent = a.visual_assessment || 'Visual canopy assessment completed.';
 
   // Analysed image
   $('analysed-img').src = analysedSrc;
 
-  // Diseases
+  // Diseases & Health Watch
   $('disease-content').innerHTML = renderItems(a.diseases ?? [], renderDisease);
-  // Pests
+  // Pests & Threat Watch
   $('pest-content').innerHTML    = renderItems(a.pests ?? [], renderPest);
-  // Nutrients
+  // Nutrients & Soil
   $('nutrient-content').innerHTML = renderItems(a.nutrient_deficiency ?? [], renderNutrient);
-  // Recs
+  // Soil & Irrigation Guide
+  const soilEl = $('soil-content');
+  if (soilEl) {
+    soilEl.innerHTML = a.soil_irrigation_guide
+      ? `<div class="result-item"><div class="ri-head"><span class="ri-name">💧 Stage-Specific Irrigation & Soil Guide</span></div><div class="ri-body">${a.soil_irrigation_guide}</div></div>`
+      : `<div class="no-issue">💧 Standard irrigation schedule recommended for this crop.</div>`;
+  }
+  // Recs & Action Plan
   const recs = a.recommendations ?? [];
   $('recs-content').innerHTML = recs.length
     ? `<ul class="recs-list">${recs.map(r => `<li>→ ${r}</li>`).join('')}</ul>`
-    : '<div class="no-issue">✅ No specific recommendations.</div>';
+    : '<div class="no-issue">✅ Follow routine crop monitoring.</div>';
 
   // Switch to diseases tab
   switchResultTab('tab-diseases');
 }
 
 function renderItems(arr, fn) {
-  if (!arr.length) return '<div class="no-issue">✅ None detected</div>';
+  if (!arr.length) return '<div class="no-issue">✅ No acute symptoms detected. Continue preventive monitoring.</div>';
   return arr.map(fn).join('');
 }
 
 function renderDisease(d) {
   const conf = (d.confidence ?? 'Low').toLowerCase();
-  return `<div class="result-item">
+  const isWatch = (d.status ?? '').toLowerCase().includes('watch');
+  const statusBadge = isWatch
+    ? `<span class="ri-badge badge-watch">🛡️ ${d.status || 'Preventive Watch'}</span>`
+    : `<span class="ri-badge badge-high">⚠️ ${d.status || 'Active Infection'}</span>`;
+
+  return `<div class="result-item ${isWatch ? 'item-watch' : 'item-active'}">
     <div class="ri-head">
       <span class="ri-name">🦠 ${d.name}</span>
-      <span class="ri-badge badge-${conf}">${d.confidence} Confidence</span>
+      <div style="display:flex;gap:.4rem;align-items:center;">
+        ${statusBadge}
+        <span class="ri-badge badge-${conf}">${d.confidence || 'Medium'} Confidence</span>
+      </div>
     </div>
     <div class="ri-body">
-      <strong>Affected area:</strong> ${d.affected_area ?? 'N/A'}<br>
-      <strong>Treatment:</strong> ${d.treatment ?? 'N/A'}
+      <strong>Affected area / Target:</strong> ${d.affected_area ?? 'Foliage'}<br>
+      <strong>Treatment / Prevention:</strong> ${d.treatment ?? 'N/A'}
     </div>
   </div>`;
 }
 
 function renderPest(p) {
   const risk = (p.risk_level ?? 'Low').toLowerCase();
-  return `<div class="result-item">
+  const isWatch = (p.status ?? '').toLowerCase().includes('watch');
+  const statusBadge = isWatch
+    ? `<span class="ri-badge badge-watch">🛡️ ${p.status || 'Common Threat Watch'}</span>`
+    : `<span class="ri-badge badge-high">🚨 ${p.status || 'Active Infestation'}</span>`;
+
+  return `<div class="result-item ${isWatch ? 'item-watch' : 'item-active'}">
     <div class="ri-head">
       <span class="ri-name">🐛 ${p.name}</span>
-      <span class="ri-badge badge-${risk}">${p.risk_level} Risk</span>
+      <div style="display:flex;gap:.4rem;align-items:center;">
+        ${statusBadge}
+        <span class="ri-badge badge-${risk}">${p.risk_level || 'Medium'} Risk</span>
+      </div>
     </div>
     <div class="ri-body">
-      <strong>Signs:</strong> ${p.signs ?? 'N/A'}<br>
-      <strong>Control:</strong> ${p.control ?? 'N/A'}
+      <strong>Signs to inspect:</strong> ${p.signs ?? 'N/A'}<br>
+      <strong>Control / Spray Guidance:</strong> ${p.control ?? 'N/A'}
     </div>
   </div>`;
 }
 
 function renderNutrient(n) {
   return `<div class="result-item">
-    <div class="ri-head"><span class="ri-name">🧪 ${n.type} Deficiency</span></div>
+    <div class="ri-head"><span class="ri-name">🧪 ${n.type}</span></div>
     <div class="ri-body">
-      <strong>Symptoms:</strong> ${n.symptoms ?? 'N/A'}<br>
-      <strong>Remedy:</strong> ${n.remedy ?? 'N/A'}
+      <strong>Symptoms / Requirements:</strong> ${n.symptoms ?? 'N/A'}<br>
+      <strong>Remedy / Fertilizer:</strong> ${n.remedy ?? 'N/A'}
     </div>
   </div>`;
 }

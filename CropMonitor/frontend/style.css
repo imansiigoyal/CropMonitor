@@ -406,6 +406,83 @@ button { font-family: 'Inter', sans-serif; cursor: pointer; }
 .badge-high   { background:rgba(248,113,113,.15); color:var(--red);   border:1px solid rgba(248,113,113,.3); }
 .badge-medium { background:rgba(251,191,36,.12);  color:var(--amber); border:1px solid rgba(251,191,36,.3); }
 .badge-low    { background:rgba(74,222,128,.1);   color:var(--green); border:1px solid rgba(74,222,128,.2); }
+.badge-watch  { background:rgba(45,212,191,.15);  color:var(--teal);  border:1px solid rgba(45,212,191,.35); }
+
+.item-watch { border-left: 3px solid var(--teal) !important; }
+.item-active { border-left: 3px solid var(--red) !important; }
+
+/* ── Crop Identification Banner ─────────────────── */
+.crop-id-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(74,222,128,.1), rgba(45,212,191,.06));
+  border: 1px solid rgba(74,222,128,.3);
+  border-radius: var(--r2);
+  padding: 1.1rem 1.4rem;
+  margin: 1.2rem 0 .9rem 0;
+  flex-wrap: wrap;
+  gap: .8rem;
+}
+.crop-badge-pill {
+  font-size: .68rem;
+  font-weight: 800;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: .25rem;
+}
+.crop-name-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--t1);
+  letter-spacing: -.01em;
+}
+.crop-sci-name {
+  font-size: .82rem;
+  color: var(--teal);
+  font-style: italic;
+  font-family: 'JetBrains Mono', monospace;
+}
+.crop-stage-block {
+  text-align: right;
+  background: rgba(0,0,0,.3);
+  padding: .5rem .9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.crop-stage-lbl {
+  font-size: .68rem;
+  color: var(--t3);
+  display: block;
+}
+.crop-stage-val {
+  font-size: .95rem;
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* ── Visual Assessment Box ──────────────────────── */
+.crop-visual-box {
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.2rem;
+}
+.cv-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: .35rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.cv-text {
+  font-size: .85rem;
+  color: var(--t2);
+  line-height: 1.65;
+}
 .ri-body { font-size: .8rem; color: var(--t3); line-height: 1.65; }
 .ri-body strong { color: var(--t2); }
 

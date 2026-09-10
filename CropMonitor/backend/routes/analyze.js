@@ -42,19 +42,53 @@ const MODELS = [
   'gemini-3.5-flash',
 ];
 
-// ── Compact prompt (fewer tokens = less quota usage) ─────────
-const PROMPT = `You are an expert plant pathologist. Analyse this crop image.
-Return ONLY a JSON object with no markdown or extra text:
+// ── Enriched Agronomy & Crop-Specific Analysis Prompt ───────
+const PROMPT = `You are an expert agricultural scientist, botanist, and plant pathologist.
+Analyze this crop image thoroughly. Identify the specific crop, its growth stage, and assess its overall health.
+Even if the crop is healthy with no active infection, provide crop-specific analysis, preventive disease/pest watches, nutrient advice, and care recommendations tailored specifically to this plant.
+
+Return ONLY a valid JSON object with NO markdown code fences or extra text:
 {
-  "overall_health": "Good|Fair|Poor|Critical",
-  "health_score": <0-100>,
-  "diseases": [{"name":"...","confidence":"High|Medium|Low","affected_area":"...","treatment":"..."}],
-  "pests": [{"name":"...","risk_level":"High|Medium|Low","signs":"...","control":"..."}],
-  "nutrient_deficiency": [{"type":"...","symptoms":"...","remedy":"..."}],
-  "recommendations": ["..."],
-  "urgency": "Immediate|Within a week|Routine monitoring"
+  "crop_name": "Identified crop name (e.g. Wheat, Tomato, Rice, Green Bean, Corn, Cotton, etc.)",
+  "scientific_name": "Botanical / scientific name",
+  "growth_stage": "Growth stage (e.g. Vegetative, Flowering, Grain Filling, Ripening, Fruiting)",
+  "overall_health": "Good, Fair, Poor, or Critical",
+  "health_score": <number 0-100>,
+  "visual_assessment": "Detailed 2-3 sentence assessment of leaf color, canopy density, vigor, and visible conditions",
+  "diseases": [
+    {
+      "name": "Disease name",
+      "status": "Active Infection or Preventive Watch",
+      "confidence": "High, Medium, or Low",
+      "affected_area": "Leaves, Stems, Ears/Heads, or Fruit",
+      "treatment": "Practical organic and chemical treatment advice"
+    }
+  ],
+  "pests": [
+    {
+      "name": "Pest name",
+      "status": "Active Infestation or Common Threat Watch",
+      "risk_level": "High, Medium, or Low",
+      "signs": "Symptoms or indicators to inspect",
+      "control": "Control measures and spray guidance"
+    }
+  ],
+  "nutrient_deficiency": [
+    {
+      "type": "Specific nutrient (e.g. Nitrogen, Zinc, Potassium) or 'Optimal Balance'",
+      "symptoms": "Visible signs or stage requirements for this crop",
+      "remedy": "Recommended fertilizer and soil amendment"
+    }
+  ],
+  "soil_irrigation_guide": "Specific irrigation and soil care recommendations for this crop at this stage",
+  "recommendations": [
+    "Actionable crop recommendation 1",
+    "Actionable crop recommendation 2",
+    "Actionable crop recommendation 3"
+  ],
+  "urgency": "Immediate, Within a week, or Routine monitoring"
 }
-Use [] for empty categories. Base everything only on what is visible.`;
+Do NOT return empty disease or pest lists. If the crop is healthy with no visible infection, include the top 2-3 common diseases and pests that affect this specific crop at this growth stage under 'Preventive Watch' status so the grower has proactive crop care instructions!`;
 
 // ── Helper: parse retry-after seconds from error message ─────
 function parseRetryAfter(msg) {

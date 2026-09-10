@@ -509,18 +509,52 @@ with tab_vision:
 
                         client = genai.Client(api_key=api_key)
 
-                        prompt = """You are an expert plant pathologist. Analyse this crop image.
-Return ONLY a valid JSON object with NO markdown quotes or surrounding text:
+                        prompt = """You are an expert agricultural scientist, botanist, and plant pathologist.
+Analyze this crop image thoroughly. Identify the specific crop, its growth stage, and assess its overall health.
+Even if the crop is healthy with no active infection, provide crop-specific analysis, preventive disease/pest watches, nutrient advice, and care recommendations tailored specifically to this plant.
+
+Return ONLY a valid JSON object with NO markdown code fences or surrounding text:
 {
-  "overall_health": "Good|Fair|Poor|Critical",
+  "crop_name": "Identified crop name (e.g. Wheat, Tomato, Rice, Green Bean, Corn, Cotton, etc.)",
+  "scientific_name": "Botanical / scientific name",
+  "growth_stage": "Growth stage (e.g. Vegetative, Flowering, Grain Filling, Ripening, Fruiting)",
+  "overall_health": "Good, Fair, Poor, or Critical",
   "health_score": <number 0-100>,
-  "diseases": [{"name":"...","confidence":"High|Medium|Low","affected_area":"...","treatment":"..."}],
-  "pests": [{"name":"...","risk_level":"High|Medium|Low","signs":"...","control":"..."}],
-  "nutrient_deficiency": [{"type":"...","symptoms":"...","remedy":"..."}],
-  "recommendations": ["..."],
-  "urgency": "Immediate|Within a week|Routine monitoring"
+  "visual_assessment": "Detailed 2-3 sentence assessment of leaf color, canopy density, vigor, and visible conditions",
+  "diseases": [
+    {
+      "name": "Disease name",
+      "status": "Active Infection or Preventive Watch",
+      "confidence": "High, Medium, or Low",
+      "affected_area": "Leaves, Stems, Ears/Heads, or Fruit",
+      "treatment": "Practical organic and chemical treatment advice"
+    }
+  ],
+  "pests": [
+    {
+      "name": "Pest name",
+      "status": "Active Infestation or Common Threat Watch",
+      "risk_level": "High, Medium, or Low",
+      "signs": "Symptoms or indicators to inspect",
+      "control": "Control measures and spray guidance"
+    }
+  ],
+  "nutrient_deficiency": [
+    {
+      "type": "Specific nutrient or 'Optimal Balance'",
+      "symptoms": "Visible signs or stage requirements for this crop",
+      "remedy": "Recommended fertilizer and soil amendment"
+    }
+  ],
+  "soil_irrigation_guide": "Specific irrigation and soil care recommendations for this crop at this stage",
+  "recommendations": [
+    "Actionable crop recommendation 1",
+    "Actionable crop recommendation 2",
+    "Actionable crop recommendation 3"
+  ],
+  "urgency": "Immediate, Within a week, or Routine monitoring"
 }
-Use [] for empty categories."""
+Do NOT return empty disease or pest lists. If the crop is healthy with no visible infection, include the top 2-3 common diseases and pests that affect this specific crop at this growth stage under 'Preventive Watch' status so the grower has proactive crop care instructions!"""
 
                         response = client.models.generate_content(
                             model="gemini-3.5-flash-lite",
@@ -545,14 +579,34 @@ Use [] for empty categories."""
             score = analysis_to_show.get("health_score", 75)
             health = analysis_to_show.get("overall_health", "Fair")
             urgency = analysis_to_show.get("urgency", "Routine monitoring")
+            crop_n = analysis_to_show.get("crop_name", "Identified Crop")
+            crop_sci = analysis_to_show.get("scientific_name", "")
+            crop_stage = analysis_to_show.get("growth_stage", "Active Growth")
 
             score_color = "#4ade80" if score > 70 else "#fbbf24" if score > 45 else "#f87171"
 
+            # Crop Identity Card
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg, rgba(74,222,128,0.12), rgba(45,212,191,0.08)); padding:1.1rem 1.3rem; border-radius:14px; border:1px solid rgba(74,222,128,0.35); margin-bottom:1rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <div>
+                  <span style="font-size:0.7rem; color:#4ade80; text-transform:uppercase; font-weight:800; letter-spacing:0.06em;">🌾 Identified Crop</span>
+                  <div style="font-size:1.4rem; font-weight:800; color:#e8fdf0;">{crop_n} <span style="font-size:0.85rem; color:#2dd4bf; font-style:italic;">({crop_sci})</span></div>
+                </div>
+                <div style="text-align:right; background:rgba(0,0,0,0.3); padding:0.4rem 0.8rem; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                  <span style="font-size:0.68rem; color:#86efac; display:block;">Growth Stage:</span>
+                  <strong style="font-size:0.95rem; color:#fbbf24;">{crop_stage}</strong>
+                </div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Overall Health Block
             st.markdown(f"""
             <div style="background:rgba(255,255,255,0.035); padding:1rem; border-radius:14px; border:1px solid rgba(255,255,255,0.08); margin-bottom:1rem;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                  <span style="font-size:0.75rem; color:#86efac; text-transform:uppercase;">Overall Health</span>
+                  <span style="font-size:0.75rem; color:#86efac; text-transform:uppercase;">Overall Health Score</span>
                   <div style="font-size:1.6rem; font-weight:800; color:{score_color}">{health} ({score}/100)</div>
                 </div>
                 <div style="background:rgba(74,222,128,0.15); padding:0.3rem 0.8rem; border-radius:100px; color:#4ade80; font-size:0.8rem; font-weight:700;">
@@ -563,26 +617,47 @@ Use [] for empty categories."""
             """, unsafe_allow_html=True)
             st.progress(score / 100)
 
-            # Diseases
+            # Visual Assessment
+            if analysis_to_show.get("visual_assessment"):
+                st.info(f"🔍 **Agronomic Visual Assessment:** {analysis_to_show.get('visual_assessment')}")
+
+            # Diseases & Preventive Health Watch
             diseases = analysis_to_show.get("diseases", [])
             if diseases:
-                st.markdown("##### 🦠 Detected Diseases")
+                st.markdown("##### 🦠 Diseases & Health Watch")
                 for d in diseases:
-                    st.warning(f"**{d.get('name')}** ({d.get('confidence')} Confidence)\n- **Affected Area:** {d.get('affected_area')}\n- **Treatment:** {d.get('treatment')}")
+                    status = d.get("status", "Watch")
+                    is_active = "active" in status.lower() or "infect" in status.lower()
+                    status_prefix = "🚨 ACTIVE INFECTION" if is_active else "🛡️ PREVENTIVE WATCH"
+                    if is_active:
+                        st.error(f"**{d.get('name')}** — `{status_prefix}` ({d.get('confidence')} Confidence)\n- **Affected Area:** {d.get('affected_area')}\n- **Treatment:** {d.get('treatment')}")
+                    else:
+                        st.warning(f"**{d.get('name')}** — `{status_prefix}` ({d.get('confidence')} Confidence)\n- **Target Area:** {d.get('affected_area')}\n- **Preventive Care:** {d.get('treatment')}")
 
-            # Pests
+            # Pests & Threat Watch
             pests = analysis_to_show.get("pests", [])
             if pests:
-                st.markdown("##### 🐛 Detected Pests")
+                st.markdown("##### 🐛 Pests & Threat Watch")
                 for p in pests:
-                    st.error(f"**{p.get('name')}** (Risk: {p.get('risk_level')})\n- **Signs:** {p.get('signs')}\n- **Control:** {p.get('control')}")
+                    status = p.get("status", "Threat Watch")
+                    is_active = "active" in status.lower() or "infest" in status.lower()
+                    status_prefix = "🚨 ACTIVE INFESTATION" if is_active else "🛡️ COMMON THREAT WATCH"
+                    if is_active:
+                        st.error(f"**{p.get('name')}** — `{status_prefix}` (Risk: {p.get('risk_level')})\n- **Visible Signs:** {p.get('signs')}\n- **Control:** {p.get('control')}")
+                    else:
+                        st.warning(f"**{p.get('name')}** — `{status_prefix}` (Risk: {p.get('risk_level')})\n- **Signs to Monitor:** {p.get('signs')}\n- **Preventive Spray / Control:** {p.get('control')}")
 
-            # Nutrient Deficiencies
+            # Nutrient Deficiencies & Soil
             nutrients = analysis_to_show.get("nutrient_deficiency", [])
             if nutrients:
-                st.markdown("##### 🧪 Nutrient Deficiencies")
+                st.markdown("##### 🧪 Nutrients & Soil Health")
                 for n in nutrients:
-                    st.info(f"**{n.get('type')} Deficiency**\n- **Symptoms:** {n.get('symptoms')}\n- **Remedy:** {n.get('remedy')}")
+                    st.info(f"**{n.get('type')}**\n- **Symptoms / Stage Needs:** {n.get('symptoms')}\n- **Fertilizer Remedy:** {n.get('remedy')}")
+
+            # Soil & Irrigation Guide
+            soil_guide = analysis_to_show.get("soil_irrigation_guide")
+            if soil_guide:
+                st.markdown(f"##### 💧 Stage-Specific Irrigation Guide\n{soil_guide}")
 
             # Recommendations
             recs = analysis_to_show.get("recommendations", [])

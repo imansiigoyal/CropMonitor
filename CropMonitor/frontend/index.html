@@ -212,12 +212,34 @@
         </div>
       </div>
 
+      <!-- Crop Identification Banner -->
+      <div class="crop-id-banner" id="crop-id-banner">
+        <div class="crop-id-left">
+          <div class="crop-badge-pill" id="crop-badge-pill">🌾 Identified Crop</div>
+          <h3 class="crop-name-title" id="crop-name-title">--</h3>
+          <div class="crop-sci-name" id="crop-sci-name">--</div>
+        </div>
+        <div class="crop-id-right">
+          <div class="crop-stage-block">
+            <span class="crop-stage-lbl">Growth Stage:</span>
+            <strong class="crop-stage-val" id="crop-stage-val">--</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Assessment Summary -->
+      <div class="crop-visual-box" id="crop-visual-box">
+        <div class="cv-label">🔍 Agronomic Visual Assessment</div>
+        <p class="cv-text" id="crop-visual-text">--</p>
+      </div>
+
       <!-- Result Tabs -->
       <div class="result-tabs" id="result-tabs">
-        <button class="rtab active" data-target="tab-diseases">🦠 Diseases</button>
-        <button class="rtab" data-target="tab-pests">🐛 Pests</button>
-        <button class="rtab" data-target="tab-nutrients">🧪 Nutrients</button>
-        <button class="rtab" data-target="tab-recs">✅ Actions</button>
+        <button class="rtab active" data-target="tab-diseases">🦠 Diseases & Health Watch</button>
+        <button class="rtab" data-target="tab-pests">🐛 Pests & Threat Watch</button>
+        <button class="rtab" data-target="tab-nutrients">🧪 Nutrients & Soil</button>
+        <button class="rtab" data-target="tab-soil">💧 Irrigation Guide</button>
+        <button class="rtab" data-target="tab-recs">✅ Action Plan</button>
       </div>
 
       <div class="result-panels">
@@ -229,6 +251,9 @@
         </div>
         <div class="result-panel" id="tab-nutrients">
           <div id="nutrient-content"></div>
+        </div>
+        <div class="result-panel" id="tab-soil">
+          <div id="soil-content"></div>
         </div>
         <div class="result-panel" id="tab-recs">
           <div id="recs-content"></div>

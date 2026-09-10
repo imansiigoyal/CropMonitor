@@ -98,7 +98,7 @@ async function generateBotReply(apiKey, messagesHistory, userPrompt) {
         },
       });
 
-      // Prepare conversation history
+      // Prepare conversation history (must start with 'user')
       const formattedHistory = [];
       if (Array.isArray(messagesHistory)) {
         for (const msg of messagesHistory.slice(-10)) { // limit to last 10 messages
@@ -109,6 +109,10 @@ async function generateBotReply(apiKey, messagesHistory, userPrompt) {
             });
           }
         }
+      }
+      // Gemini startChat requires the first history message to be from 'user'
+      while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
+        formattedHistory.shift();
       }
 
       const chat = model.startChat({
