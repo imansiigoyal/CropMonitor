@@ -42,6 +42,13 @@ const SCHEMA = `
     mode        TEXT NOT NULL,
     pump_state  INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp   TEXT DEFAULT (datetime('now','localtime')),
+    role        TEXT NOT NULL,
+    content     TEXT NOT NULL
+  );
 `;
 
 /** Initialise the database. Must be awaited before server starts. */
@@ -128,6 +135,26 @@ function getLatestOverride() {
   return queryOne(`SELECT * FROM irrigation_overrides ORDER BY id DESC LIMIT 1`);
 }
 
+// ── Chat ──────────────────────────────────────────────────────────────────
+function insertChatMessage({ role, content }) {
+  run(
+    `INSERT INTO chat_messages (role, content) VALUES (:role, :content)`,
+    { ':role': role, ':content': content }
+  );
+}
+
+function getRecentChatMessages(limit = 30) {
+  const rows = queryAll(
+    `SELECT * FROM chat_messages ORDER BY id DESC LIMIT :limit`,
+    { ':limit': limit }
+  );
+  return rows.reverse();
+}
+
+function clearChatHistory() {
+  run(`DELETE FROM chat_messages`);
+}
+
 module.exports = {
   initDB,
   insertReading,
@@ -137,4 +164,8 @@ module.exports = {
   getRecentAnalyses,
   insertOverride,
   getLatestOverride,
+  insertChatMessage,
+  getRecentChatMessages,
+  clearChatHistory,
 };
+

@@ -10,6 +10,7 @@ const { WebSocketServer } = require('ws');
 const sensorRouter     = require('./routes/sensor');
 const analyzeRouter    = require('./routes/analyze');
 const irrigationRouter = require('./routes/irrigation');
+const chatRouter       = require('./routes/chat');
 const { initDB }       = require('./db');
 
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.use('/api/sensor',     sensorRouter);
 app.use('/api/analyze',    analyzeRouter);
 app.use('/api/irrigation', irrigationRouter);
+app.use('/api/chat',       chatRouter);
 
 // Health check
 app.get('/api/ping', (_, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));

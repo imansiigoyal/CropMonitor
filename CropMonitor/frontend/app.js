@@ -1,24 +1,11 @@
-// ─────────────────────────────────────────────────────────────
-// Utilities
-// ─────────────────────────────────────────────────────────────
-function fmtTime(ts) {
-  if (!ts) return '--';
-  try {
-    return new Date(ts).toLocaleTimeString('en-IN', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
-  } catch { return '--'; }
-}
+'use strict';
 
-// For chart labels — only HH:MM to keep axis clean
-function fmtChartTime(ts) {
-  if (!ts) return '--';
-  try {
-    return new Date(ts).toLocaleTimeString('en-IN', {
-      hour: '2-digit', minute: '2-digit'
-    });
-  } catch { return '--'; }
-}
+// ─────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────
+const WS_URL   = `ws://${location.host}/ws`;
+const API      = '/api';
+const MAX_PTS  = 60;
 
 // ─────────────────────────────────────────────────────────────
 // State
@@ -92,6 +79,12 @@ function handleSensor(d) {
 
   $('updated-badge').textContent = 'Updated: ' + fmtTime(timestamp);
 
+  // Sync with AgriBot mini telemetry bar
+  const cm = $('chat-tele-moisture');
+  const ct = $('chat-tele-temp');
+  if (cm) cm.textContent = `${moisture.toFixed(1)}%`;
+  if (ct) ct.textContent = `${temperature.toFixed(1)}°C`;
+
   // Chart history
   history.labels.push(fmtTime(timestamp));
   history.moisture.push(+moisture.toFixed(1));
@@ -128,6 +121,10 @@ function updatePump(on, mode) {
   ring.className = 'pump-ring' + (on ? ' on' : '');
   txt.textContent = on ? 'ON' : 'OFF';
   if (lbl) lbl.textContent = `Mode: ${mode === 'manual' ? 'Manual' : 'Auto'}`;
+
+  // Sync AgriBot mini telemetry bar pump
+  const cp = $('chat-tele-pump');
+  if (cp) cp.textContent = on ? 'ON 💦' : 'OFF ⛔';
 
   // Sync mode buttons
   $('btn-auto').classList.toggle('active',   mode !== 'manual');
@@ -557,3 +554,295 @@ function fmtTime(ts) {
 // Init
 // ─────────────────────────────────────────────────────────────
 connectWS();
+
+// ─────────────────────────────────────────────────────────────
+// 🤖 AGRIBOT AI CHATBOT CONTROLLER
+// ─────────────────────────────────────────────────────────────
+(function initAgriBotController() {
+  const panel        = $('agribot-panel');
+  const launcher     = $('agribot-launcher');
+  const toggleBtn    = $('agribot-toggle-btn');
+  const launcherPill = $('agribot-launcher-pill');
+  const topbarBtn    = $('topbar-chat-btn');
+  const closeBtn     = $('agribot-close-btn');
+  const clearBtn     = $('agribot-clear-btn');
+  const messagesBox  = $('agribot-messages');
+  const typingEl     = $('agribot-typing');
+  const formEl       = $('agribot-form');
+  const inputEl      = $('agribot-input');
+  const sendBtn      = $('agribot-send-btn');
+  const btnIcon      = $('agribot-btn-icon');
+  const chipsBar     = $('agribot-chips');
+
+  if (!panel || !toggleBtn || !formEl || !inputEl) return;
+
+  let isChatOpen = false;
+  let isThinking = false;
+  let chatHistory = [];
+
+  // Default welcome message
+  const WELCOME_MSG = {
+    role: 'model',
+    content: `Hello! I am **AgriBot AI**, your smart agronomy & farm irrigation advisor 🌿\n\nI am continuously monitoring your **live IoT sensors** (soil moisture, temperature, humidity, pump) and crop disease scans.\n\nAsk me anything like:\n* *"Should I water my crops right now?"*\n* *"Are my humidity and temperature levels optimal?"*\n* *"What are organic remedies for aphids or blight?"*\n* *"How can I improve soil nutrient retention?"*`,
+    timestamp: new Date().toISOString(),
+  };
+
+  // ── Open / Close Chat Window ──────────────────────────────
+  function toggleChat(forceOpen) {
+    isChatOpen = typeof forceOpen === 'boolean' ? forceOpen : !isChatOpen;
+    panel.classList.toggle('hidden', !isChatOpen);
+
+    if (btnIcon) {
+      btnIcon.textContent = isChatOpen ? '✕' : '💬';
+    }
+
+    if (isChatOpen) {
+      scrollChatBottom();
+      setTimeout(() => inputEl.focus(), 150);
+    }
+  }
+
+  toggleBtn.addEventListener('click', () => toggleChat());
+  if (launcherPill) launcherPill.addEventListener('click', () => toggleChat(true));
+  if (topbarBtn)    topbarBtn.addEventListener('click', () => toggleChat(true));
+  if (closeBtn)     closeBtn.addEventListener('click', () => toggleChat(false));
+
+  // ── Auto-resize input textarea ─────────────────────────────
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
+  });
+
+  // Enter to send (Shift+Enter for newline)
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      formEl.dispatchEvent(new Event('submit'));
+    }
+  });
+
+  // ── Quick Prompt Chips ────────────────────────────────────
+  if (chipsBar) {
+    chipsBar.querySelectorAll('.agri-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const promptText = chip.getAttribute('data-prompt');
+        if (promptText && !isThinking) {
+          submitQuestion(promptText);
+        }
+      });
+    });
+  }
+
+  // ── Form Submit ───────────────────────────────────────────
+  formEl.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text || isThinking) return;
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    submitQuestion(text);
+  });
+
+  // ── Submit User Question to Backend ───────────────────────
+  async function submitQuestion(questionText) {
+    // Render user message
+    const userMsg = {
+      role: 'user',
+      content: questionText,
+      timestamp: new Date().toISOString(),
+    };
+    renderMessage(userMsg);
+    chatHistory.push(userMsg);
+    scrollChatBottom();
+
+    // Show typing state
+    setThinking(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: questionText,
+          history: chatHistory.slice(-10).map((m) => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            content: m.content,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || `Server responded with status ${res.status}`);
+      }
+
+      const botMsg = {
+        role: 'model',
+        content: data.reply || 'No response received.',
+        timestamp: data.timestamp || new Date().toISOString(),
+      };
+      renderMessage(botMsg);
+      chatHistory.push(botMsg);
+
+    } catch (err) {
+      console.error('[AgriBot Error]', err);
+      const errMsg = {
+        role: 'model',
+        content: `⚠️ **AgriBot Assistant:** ${err.message || 'Unable to connect to AI service. Please check your network or try again.'}`,
+        timestamp: new Date().toISOString(),
+      };
+      renderMessage(errMsg);
+    } finally {
+      setThinking(false);
+      scrollChatBottom();
+    }
+  }
+
+  function setThinking(active) {
+    isThinking = active;
+    typingEl.classList.toggle('hidden', !active);
+    sendBtn.disabled = active;
+    if (active) scrollChatBottom();
+  }
+
+  function scrollChatBottom() {
+    requestAnimationFrame(() => {
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    });
+  }
+
+  // ── Render Message Bubble ─────────────────────────────────
+  function renderMessage(msg) {
+    const isBot = msg.role === 'model' || msg.role === 'assistant';
+    const msgEl = document.createElement('div');
+    msgEl.className = `chat-msg ${isBot ? 'bot' : 'user'}`;
+
+    const timeStr = fmtTime(msg.timestamp);
+
+    const avatarHtml = isBot
+      ? `<div class="chat-avatar">🌿</div>`
+      : `<div class="chat-avatar">🧑‍🌾</div>`;
+
+    const formattedContent = isBot ? formatMarkdown(msg.content) : escapeHtml(msg.content);
+
+    msgEl.innerHTML = `
+      ${avatarHtml}
+      <div>
+        <div class="chat-bubble">
+          ${formattedContent}
+        </div>
+        <div class="chat-time">${timeStr}</div>
+      </div>
+    `;
+
+    messagesBox.appendChild(msgEl);
+  }
+
+  // ── Simple, robust Markdown parser for Bot bubbles ────────
+  function formatMarkdown(text) {
+    if (!text) return '';
+    let escaped = escapeHtml(text);
+
+    // Code blocks ```code```
+    escaped = escaped.replace(/```([\s\S]*?)```/g, (_, code) => {
+      return `<pre><code>${code.trim()}</code></pre>`;
+    });
+
+    // Inline code `code`
+    escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Headers
+    escaped = escaped.replace(/^### (.*$)/gim, '<h4>$1</h4>');
+    escaped = escaped.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+
+    // Bold **text** or __text__
+    escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    escaped = escaped.replace(/__(.*?)__/g, '<strong>$1</strong>');
+
+    // Italic *text* or _text_
+    escaped = escaped.replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+    // Bullet points * or -
+    const lines = escaped.split('\n');
+    let inList = false;
+    const formattedLines = [];
+
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (/^[\*\-]\s+(.*)/.test(trimmed)) {
+        if (!inList) {
+          formattedLines.push('<ul>');
+          inList = true;
+        }
+        formattedLines.push(`<li>${trimmed.replace(/^[\*\-]\s+/, '')}</li>`);
+      } else if (/^\d+\.\s+(.*)/.test(trimmed)) {
+        if (!inList) {
+          formattedLines.push('<ol>');
+          inList = 'ol';
+        }
+        formattedLines.push(`<li>${trimmed.replace(/^\d+\.\s+/, '')}</li>`);
+      } else {
+        if (inList) {
+          formattedLines.push(inList === 'ol' ? '</ol>' : '</ul>');
+          inList = false;
+        }
+        if (trimmed) {
+          formattedLines.push(`<p>${trimmed}</p>`);
+        }
+      }
+    }
+    if (inList) {
+      formattedLines.push(inList === 'ol' ? '</ol>' : '</ul>');
+    }
+
+    return formattedLines.join('');
+  }
+
+  function escapeHtml(str) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(str).replace(/[&<>"']/g, (m) => map[m]);
+  }
+
+  // ── Load Chat History ─────────────────────────────────────
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/chat/history?limit=25');
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          messagesBox.innerHTML = '';
+          chatHistory = rows.map((r) => ({
+            role: r.role,
+            content: r.content,
+            timestamp: r.timestamp,
+          }));
+          chatHistory.forEach(renderMessage);
+          scrollChatBottom();
+          return;
+        }
+      }
+    } catch {}
+
+    // Fallback: render welcome message
+    messagesBox.innerHTML = '';
+    renderMessage(WELCOME_MSG);
+    chatHistory = [WELCOME_MSG];
+  }
+
+  // ── Clear Chat History ────────────────────────────────────
+  clearBtn.addEventListener('click', async () => {
+    if (!confirm('Clear all AgriBot chat messages?')) return;
+    try {
+      await fetch('/api/chat/history', { method: 'DELETE' });
+    } catch {}
+    messagesBox.innerHTML = '';
+    renderMessage(WELCOME_MSG);
+    chatHistory = [WELCOME_MSG];
+  });
+
+  // Initial load
+  loadHistory();
+})();
+

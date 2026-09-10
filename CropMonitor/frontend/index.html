@@ -23,6 +23,11 @@
     </div>
   </div>
   <div class="topbar-right">
+    <button class="topbar-chat-btn" id="topbar-chat-btn" title="Open AgriBot AI Farming Assistant">
+      <span class="chat-bot-icon">🤖</span>
+      <span class="chat-bot-label">AgriBot AI</span>
+      <span class="chat-status-pulse"></span>
+    </button>
     <div class="ws-pill" id="ws-pill">
       <span class="ws-dot" id="ws-dot"></span>
       <span id="ws-label">Connecting…</span>
@@ -245,12 +250,108 @@
 
 </main>
 
-<script>
-  // ── Dynamic URL config (works on localhost AND Render HTTPS) ──────────
-  const API     = '/api';
-  const WS_URL  = (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/ws';
-  const MAX_PTS = 200;
-</script>
+<!-- ═══════════════════ AGRIBOT AI CHATBOT ═══════════════════ -->
+<!-- Floating Launcher Button -->
+<div class="agribot-launcher" id="agribot-launcher" title="Chat with AgriBot AI">
+  <button class="agribot-launcher-btn" id="agribot-toggle-btn" aria-label="Open AgriBot AI Assistant">
+    <span class="agribot-btn-icon" id="agribot-btn-icon">💬</span>
+    <span class="agribot-pulse-ring"></span>
+  </button>
+  <div class="agribot-launcher-pill" id="agribot-launcher-pill">
+    <span class="pill-dot"></span>
+    <span class="pill-text">Ask AgriBot AI</span>
+  </div>
+</div>
+
+<!-- Chat Window / Drawer -->
+<div class="agribot-panel hidden" id="agribot-panel" role="dialog" aria-labelledby="agribot-title">
+  <!-- Header -->
+  <div class="agribot-header">
+    <div class="agribot-header-info">
+      <div class="agribot-avatar">🌿</div>
+      <div>
+        <div class="agribot-title-row">
+          <h3 class="agribot-title" id="agribot-title">AgriBot <span>AI</span></h3>
+          <span class="agribot-badge">PRO</span>
+        </div>
+        <div class="agribot-status">
+          <span class="agribot-status-dot"></span>
+          <span id="agribot-status-text">Connected to Live Telemetry</span>
+        </div>
+      </div>
+    </div>
+    <div class="agribot-header-actions">
+      <button class="agribot-action-btn" id="agribot-clear-btn" title="Clear conversation">🗑️</button>
+      <button class="agribot-action-btn" id="agribot-close-btn" title="Minimize chat">✕</button>
+    </div>
+  </div>
+
+  <!-- Telemetry Live Strip -->
+  <div class="agribot-telemetry-bar">
+    <div class="tele-item" title="Live Soil Moisture">
+      <span class="tele-icon">💧</span>
+      <span class="tele-lbl">Moisture:</span>
+      <strong id="chat-tele-moisture">--%</strong>
+    </div>
+    <div class="tele-divider"></div>
+    <div class="tele-item" title="Live Temperature">
+      <span class="tele-icon">🌡️</span>
+      <span class="tele-lbl">Temp:</span>
+      <strong id="chat-tele-temp">--°C</strong>
+    </div>
+    <div class="tele-divider"></div>
+    <div class="tele-item" title="Pump State">
+      <span class="tele-icon">🚿</span>
+      <span class="tele-lbl">Pump:</span>
+      <strong id="chat-tele-pump">OFF</strong>
+    </div>
+  </div>
+
+  <!-- Quick Prompts Chips -->
+  <div class="agribot-chips-bar" id="agribot-chips">
+    <button class="agri-chip" data-prompt="Should I water my crops right now based on the live sensors?">💧 Check Irrigation</button>
+    <button class="agri-chip" data-prompt="Are my greenhouse climate and moisture levels safe for crops?">🌡️ Check Climate</button>
+    <button class="agri-chip" data-prompt="Explain my most recent AI crop disease analysis and recommendations.">🔬 Latest Diagnosis</button>
+    <button class="agri-chip" data-prompt="What are effective organic remedies for common crop pests and aphids?">🐛 Pest Remedies</button>
+    <button class="agri-chip" data-prompt="What fertilizer schedule works best during high summer heat?">🌾 Fertilizer Tips</button>
+  </div>
+
+  <!-- Messages List -->
+  <div class="agribot-messages" id="agribot-messages">
+    <!-- Welcome message will be initialized by app.js -->
+  </div>
+
+  <!-- Typing Indicator -->
+  <div class="agribot-typing hidden" id="agribot-typing">
+    <div class="typing-bubble">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+    <span class="typing-label">AgriBot is analyzing farm data…</span>
+  </div>
+
+  <!-- Footer Input Area -->
+  <div class="agribot-footer">
+    <form class="agribot-input-form" id="agribot-form">
+      <textarea
+        id="agribot-input"
+        class="agribot-textarea"
+        rows="1"
+        placeholder="Ask anything about your crops, soil, or climate…"
+        aria-label="Ask AgriBot a question"
+        required
+      ></textarea>
+      <button type="submit" class="agribot-send-btn" id="agribot-send-btn" title="Send message">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+        </svg>
+      </button>
+    </form>
+    <div class="agribot-footnote">Powered by Google Gemini Vision & Telemetry Engine</div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>

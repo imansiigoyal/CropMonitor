@@ -465,3 +465,507 @@ button { font-family: 'Inter', sans-serif; cursor: pointer; }
   .logo-sub { display: none; }
   .sc-val { font-size: 2rem; }
 }
+
+/* ════════════════════════════════════════════════════
+   AGRIBOT AI CHATBOT STYLES
+   Glassmorphism, Agriculture Dark Glow Theme
+════════════════════════════════════════════════════ */
+
+/* ── Topbar Chat Button ─────────────────────────── */
+.topbar-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .85rem;
+  border-radius: 100px;
+  background: rgba(74,222,128,.08);
+  border: 1px solid rgba(74,222,128,.35);
+  color: var(--t1);
+  font-size: .78rem;
+  font-weight: 600;
+  transition: all var(--tr);
+  position: relative;
+  overflow: hidden;
+}
+.topbar-chat-btn:hover {
+  background: rgba(74,222,128,.18);
+  border-color: var(--green);
+  box-shadow: 0 0 14px rgba(74,222,128,.3);
+  transform: translateY(-1px);
+}
+.chat-bot-icon { font-size: .95rem; }
+.chat-status-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 1.8s infinite;
+}
+
+/* ── Floating Launcher ──────────────────────────── */
+.agribot-launcher {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-direction: row-reverse;
+}
+.agribot-launcher-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #15803d, #22c55e, #14b8a6);
+  border: 2px solid rgba(255,255,255,.2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 8px 28px rgba(34,197,94,.4), 0 0 15px rgba(20,184,166,.3);
+  position: relative;
+  transition: all .25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+.agribot-launcher-btn:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 12px 36px rgba(34,197,94,.55), 0 0 24px rgba(20,184,166,.45);
+}
+.agribot-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  opacity: .5;
+  animation: pulseExpand 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  pointer-events: none;
+}
+@keyframes pulseExpand {
+  0%   { transform: scale(.92); opacity: .8; }
+  70%  { transform: scale(1.22); opacity: 0; }
+  100% { transform: scale(1.22); opacity: 0; }
+}
+
+.agribot-launcher-pill {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .45rem .85rem;
+  background: rgba(15,26,18,.92);
+  border: 1px solid rgba(74,222,128,.3);
+  border-radius: 100px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  backdrop-filter: blur(8px);
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--t1);
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.agribot-launcher-pill:hover {
+  border-color: var(--green);
+  color: var(--green);
+  transform: translateX(-3px);
+}
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+/* ── AgriBot Panel Window ───────────────────────── */
+.agribot-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  height: 620px;
+  max-height: calc(100vh - 48px);
+  background: rgba(10,18,13,0.95);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(74,222,128,.28);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.75), 0 0 35px rgba(74,222,128,.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+  animation: agribotPop .3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes agribotPop {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.agribot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .95rem 1.15rem;
+  background: rgba(15,26,18,.8);
+  border-bottom: 1px solid var(--border);
+}
+.agribot-header-info {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.agribot-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(34,197,94,.25), rgba(45,212,191,.25));
+  border: 1px solid rgba(74,222,128,.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  box-shadow: 0 0 12px rgba(74,222,128,.2);
+}
+.agribot-title-row {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.agribot-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--t1);
+  letter-spacing: -.01em;
+}
+.agribot-title span { color: var(--green); }
+.agribot-badge {
+  font-size: .6rem;
+  font-weight: 800;
+  padding: .12rem .38rem;
+  background: rgba(74,222,128,.15);
+  border: 1px solid rgba(74,222,128,.35);
+  color: var(--green);
+  border-radius: 4px;
+}
+.agribot-status {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .68rem;
+  color: var(--t3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.agribot-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green2);
+  box-shadow: 0 0 6px var(--green2);
+  animation: blink 2s infinite;
+}
+.agribot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.agribot-action-btn {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  color: var(--t3);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  transition: all var(--tr);
+}
+.agribot-action-btn:hover {
+  background: rgba(255,255,255,.1);
+  color: var(--t1);
+  border-color: var(--border2);
+}
+
+/* Telemetry Mini Bar */
+.agribot-telemetry-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem 1.1rem;
+  background: rgba(74,222,128,.04);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: .72rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tele-item {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  color: var(--t3);
+}
+.tele-item strong {
+  color: var(--t2);
+  font-weight: 600;
+}
+.tele-divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255,255,255,.08);
+}
+
+/* Quick Prompt Chips */
+.agribot-chips-bar {
+  display: flex;
+  gap: .45rem;
+  padding: .65rem 1.1rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: rgba(0,0,0,.15);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: thin;
+}
+.agribot-chips-bar::-webkit-scrollbar { height: 3px; }
+.agribot-chips-bar::-webkit-scrollbar-thumb { background: rgba(74,222,128,.2); border-radius: 4px; }
+.agri-chip {
+  padding: .3rem .7rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: .73rem;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all var(--tr);
+  flex-shrink: 0;
+}
+.agri-chip:hover {
+  background: rgba(74,222,128,.12);
+  border-color: var(--green);
+  color: var(--green);
+  transform: translateY(-1px);
+}
+
+/* Messages Area */
+.agribot-messages {
+  flex: 1;
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  scroll-behavior: smooth;
+}
+.agribot-messages::-webkit-scrollbar { width: 4px; }
+.agribot-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+
+/* Chat Message Bubbles */
+.chat-msg {
+  display: flex;
+  gap: .65rem;
+  max-width: 90%;
+  animation: msgFade .25s ease;
+}
+@keyframes msgFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chat-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.chat-msg.bot {
+  align-self: flex-start;
+}
+.chat-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .95rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.chat-msg.bot .chat-avatar {
+  background: rgba(34,197,94,.12);
+  border-color: rgba(74,222,128,.35);
+}
+.chat-bubble {
+  padding: .75rem 1rem;
+  border-radius: 16px;
+  font-size: .83rem;
+  line-height: 1.6;
+  position: relative;
+  word-break: break-word;
+}
+.chat-msg.bot .chat-bubble {
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--t1);
+  border-top-left-radius: 4px;
+}
+.chat-msg.user .chat-bubble {
+  background: linear-gradient(135deg, rgba(34,197,94,.22), rgba(20,184,166,.2));
+  border: 1px solid rgba(74,222,128,.38);
+  color: #e8fdf0;
+  border-top-right-radius: 4px;
+}
+.chat-time {
+  font-size: .62rem;
+  color: var(--t3);
+  margin-top: .35rem;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: right;
+}
+
+/* Markdown formatting inside bot bubble */
+.chat-bubble p { margin-bottom: .5rem; }
+.chat-bubble p:last-child { margin-bottom: 0; }
+.chat-bubble strong { color: var(--green); font-weight: 700; }
+.chat-bubble em { color: var(--teal); }
+.chat-bubble ul, .chat-bubble ol {
+  margin: .4rem 0 .5rem 1.2rem;
+  padding: 0;
+}
+.chat-bubble li {
+  margin-bottom: .3rem;
+}
+.chat-bubble code {
+  background: rgba(0,0,0,.4);
+  padding: .15rem .35rem;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem;
+  color: var(--teal);
+}
+.chat-bubble h4, .chat-bubble h3 {
+  font-size: .88rem;
+  margin: .6rem 0 .3rem 0;
+  color: var(--t2);
+}
+
+/* Typing indicator */
+.agribot-typing {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .4rem 1.1rem;
+  font-size: .75rem;
+  color: var(--t3);
+}
+.typing-bubble {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  padding: .4rem .65rem;
+  border-radius: 12px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: .4; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Footer & Input */
+.agribot-footer {
+  padding: .85rem 1.1rem;
+  background: rgba(15,26,18,.9);
+  border-top: 1px solid var(--border);
+}
+.agribot-input-form {
+  display: flex;
+  align-items: flex-end;
+  gap: .5rem;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .45rem .65rem;
+  transition: all var(--tr);
+}
+.agribot-input-form:focus-within {
+  border-color: var(--green);
+  box-shadow: 0 0 12px rgba(74,222,128,.2);
+  background: rgba(255,255,255,.06);
+}
+.agribot-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--t1);
+  font-family: 'Inter', sans-serif;
+  font-size: .83rem;
+  line-height: 1.4;
+  resize: none;
+  max-height: 100px;
+  padding: .2rem 0;
+  outline: none;
+}
+.agribot-textarea::placeholder {
+  color: var(--t3);
+}
+.agribot-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--green);
+  border: none;
+  color: #080e0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--tr);
+}
+.agribot-send-btn:hover {
+  background: #22c55e;
+  transform: scale(1.06);
+}
+.agribot-send-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+  transform: none;
+}
+.agribot-footnote {
+  font-size: .62rem;
+  color: var(--t4);
+  text-align: center;
+  margin-top: .45rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Mobile adjustments */
+@media (max-width: 560px) {
+  .agribot-panel {
+    bottom: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 85vh;
+    max-height: 85vh;
+    border-radius: 20px 20px 0 0;
+  }
+  .agribot-launcher {
+    bottom: 16px;
+    right: 16px;
+  }
+  .topbar-chat-btn .chat-bot-label {
+    display: none;
+  }
+}
+

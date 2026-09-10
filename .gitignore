@@ -1,33 +1,22 @@
-# ── Node ─────────────────────────────────────
+# Secrets and environment
+.streamlit/secrets.toml
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+
+# Node
 node_modules/
 npm-debug.log*
 
-# ── Environment (NEVER commit secrets) ───────
-backend/.env
-
-# ── SQLite database (ephemeral on Render) ────
-backend/cropmonitor.db
-backend/cropmonitor.db-journal
-
-# ── Uploaded images ──────────────────────────
-backend/uploads/*
-!backend/uploads/.gitkeep
-
-# ── OS files ─────────────────────────────────
+# Database & temp
+*.db-journal
+uploads/
 .DS_Store
-Thumbs.db
-
-# ── Editor ───────────────────────────────────────
-.vscode/
-*.log
-
-# ── Streamlit secrets (NEVER commit) ─────────────
-streamlit_app/.streamlit/secrets.toml
-
-# ── Python artifacts ──────────────────────────────
-__pycache__/
-*.py[cod]
-*.pyo
-.venv/
-venv/
-streamlit_app/cropmonitor.db

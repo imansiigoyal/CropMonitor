@@ -8,6 +8,7 @@
 
 | Feature | Description |
 |---|---|
+| 🤖 **AgriBot AI Chatbot** | Interactive smart agronomy chatbot with real-time sensor telemetry awareness |
 | 📷 **AI Crop Analysis** | Upload a photo → Gemini Vision detects diseases, pests & nutrient deficiencies |
 | 💧 **Soil Moisture Monitor** | Real-time capacitive soil moisture readings from ESP32 |
 | 🌡️ **Temperature & Humidity** | Live DHT22 sensor data displayed on dashboard |
@@ -29,13 +30,14 @@ CropMonitor/
 │   ├── routes/
 │   │   ├── sensor.js      ← ESP32 data ingestion + auto-irrigation logic
 │   │   ├── analyze.js     ← Gemini Vision AI crop analysis
-│   │   └── irrigation.js  ← Manual pump override
+│   │   ├── irrigation.js  ← Manual pump override
+│   │   └── chat.js        ← AgriBot AI contextual chatbot endpoint
 │   ├── package.json
 │   └── .env               ← Your config (API key, thresholds)
 ├── frontend/
-│   ├── index.html         ← Dashboard UI
+│   ├── index.html         ← Dashboard UI & AgriBot Chat Widget
 │   ├── style.css          ← Dark glassmorphism theme
-│   └── app.js             ← WebSocket + chart + upload logic
+│   └── app.js             ← WebSocket + chart + upload + AgriBot logic
 └── esp32/
     └── crop_monitor.ino   ← Arduino firmware for ESP32
 ```
@@ -131,6 +133,10 @@ You'll need to calibrate the `SOIL_DRY_VALUE` and `SOIL_WET_VALUE` constants:
 | `GET` | `/api/analyze/history` | Last 10 AI analyses |
 | `POST` | `/api/irrigation/override` | `{ mode: "auto"|"manual", pump_on: bool }` |
 | `GET` | `/api/irrigation/status` | Current pump mode & state |
+| `POST` | `/api/chat` | Chat with AgriBot AI `{ message, history }` |
+| `GET` | `/api/chat/history` | Retrieve saved chat message history |
+| `DELETE`| `/api/chat/history` | Clear saved chat history |
+| `GET` | `/api/chat/status` | AgriBot AI status and health check |
 | `WS` | `ws://localhost:3000/ws` | Real-time updates |
 
 ---
